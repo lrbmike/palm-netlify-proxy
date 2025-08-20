@@ -6,6 +6,6 @@
     Access-Control-Allow-Methods = "*"
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/proxy"
+  to = "/.netlify/functions/proxy_go"
   status = 200
   force = true
