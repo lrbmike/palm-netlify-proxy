@@ -93,6 +93,7 @@ export default async (request: Request, context: Context) => {
     body: request.body,
     method: request.method,
     headers: forwardedHeaders,
+    duplex: 'half', // <-- 关键修复：根据 Netlify runtime 的要求添加此行
   });
 
   // ---- 核心优化：稳定的流式响应处理 ----
@@ -106,10 +107,9 @@ export default async (request: Request, context: Context) => {
   });
 
   // 删除可能导致问题的响应头
-  // Netlify Edge 会自动处理压缩和内容长度，手动设置可能导致冲突
   responseHeaders.delete("content-encoding");
   responseHeaders.delete("content-length");
-  responseHeaders.delete("alt-svc"); // Google 常用的一个头部，代理时移除更安全
+  responseHeaders.delete("alt-svc");
 
   // 如果上游响应没有 body，直接返回
   if (!googleResponse.body) {
@@ -120,8 +120,7 @@ export default async (request: Request, context: Context) => {
     });
   }
   
-  // 创建一个 TransformStream，它提供一对可读和可写的流
-  // 我们将把上游的响应流 "泵" 入这个流，然后把它的可读端返回给客户端
+  // 创建一个 TransformStream 来稳定地代理流
   const { readable, writable } = new TransformStream();
   googleResponse.body.pipeTo(writable);
 
